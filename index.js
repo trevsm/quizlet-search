@@ -14,7 +14,7 @@ app.use(
     })
 );
 
-const port = Environment.get("PORT") || 3000;
+const port = process.env.PORT || 3000;
 
 function getValues(obj, key) {
     var objects = [];
