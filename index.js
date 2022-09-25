@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.text());
 app.use(
@@ -13,7 +14,7 @@ app.use(
     })
 );
 
-const port = 80;
+const port = Environment.get("PORT") || 3000;
 
 function getValues(obj, key) {
     var objects = [];
