@@ -29,9 +29,9 @@ function getValues(obj, key) {
     return objects;
 }
 
-app.post("/quizlet", (req, res) => {
+app.post("/", (req, res) => {
     exec(
-        `curl -sA "Chrome" -L "http://www.google.com/search?q=\"${res.body}\"+\"site:quizlet.com\"" | pup ":parent-of(:parent-of(a[href*="http"])) json{}"`,
+        `curl -sA "Chrome" -L "http://www.google.com/search?q=\"${req.body}\"+\"site:quizlet.com\"" | pup ":parent-of(:parent-of(a[href*="http"])) json{}"`,
         (error, stdout) => {
             if (error) {
                 res.status(500).send(error);
