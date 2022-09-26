@@ -45,7 +45,8 @@ function searchQuery(body) {
                             x.children.length == 2 &&
                             JSON.stringify(x).includes("quizlet.com")
                     );
-                    if (data.length == 0) reject("No results found");
+                    if (data.length == 0)
+                        reject("(Google Search) No results found");
                     const final = [];
                     data.map((x) => {
                         const entry = {};
@@ -78,7 +79,8 @@ function quizletQuery(url, question) {
                     reject(error);
                 } else {
                     const data = JSON.parse(stdout);
-                    if (data.length == 0) reject("No results found");
+                    if (data.length == 0)
+                        reject("(Quizlet Query) No results found");
                     let final = [];
                     data.map((x) => {
                         const values = getValues(x, "text");
@@ -90,7 +92,7 @@ function quizletQuery(url, question) {
                             .compareTwoStrings(question, values[1])
                             .toFixed(2);
 
-                        if (first > 0.5 || second > 0.5) {
+                        if (first > 0.4 || second > 0.4) {
                             const elem = {};
                             if (first >= second) {
                                 elem.text = values[1];
@@ -99,7 +101,7 @@ function quizletQuery(url, question) {
                                 elem.text = values[0];
                                 elem.confidence = second;
                             }
-                            final.push({ ...elem, url });
+                            final.push({ ...elem });
                         }
                     });
                     if (final.length == 0) reject("No results found");
@@ -119,8 +121,10 @@ app.post("/", async (req, res) => {
         let final = [];
         await Promise.all(
             data.map(async (item) => {
-                const nextData = await quizletQuery(item.href, req.body);
-                final = final.concat(nextData);
+                const nextData = await quizletQuery(item.href, req.body).catch(
+                    console.log
+                );
+                if (nextData) final = final.concat(nextData);
             })
         );
 
