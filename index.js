@@ -85,23 +85,27 @@ function quizletQuery(url, question) {
                     data.map((x) => {
                         const values = getValues(x, "text");
 
-                        const first = stringSimilarity
-                            .compareTwoStrings(question, values[0])
-                            .toFixed(2);
-                        const second = stringSimilarity
-                            .compareTwoStrings(question, values[1])
-                            .toFixed(2);
+                        try {
+                            const first = stringSimilarity
+                                .compareTwoStrings(question, values[0])
+                                .toFixed(2);
+                            const second = stringSimilarity
+                                .compareTwoStrings(question, values[1])
+                                .toFixed(2);
 
-                        if (first > 0.4 || second > 0.4) {
-                            const elem = {};
-                            if (first >= second) {
-                                elem.text = values[1];
-                                elem.confidence = first;
-                            } else {
-                                elem.text = values[0];
-                                elem.confidence = second;
+                            if (first > 0.5 || second > 0.5) {
+                                const elem = {};
+                                if (first >= second) {
+                                    elem.text = values[1];
+                                    elem.confidence = first;
+                                } else {
+                                    elem.text = values[0];
+                                    elem.confidence = second;
+                                }
+                                final.push({ ...elem });
                             }
-                            final.push({ ...elem });
+                        } catch (e) {
+                            console.log(e);
                         }
                     });
                     if (final.length == 0) reject("No results found");
