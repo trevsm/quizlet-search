@@ -71,14 +71,13 @@ function searchQuery(body) {
 
 function quizletQuery(url, question) {
     return new Promise((resolve, reject) => {
-        const pupFilter = `.SetPageTerm-content json{}`;
         exec(
-            `curl -sA "Chrome" -L "${url}" | pup "${pupFilter}"`,
+            `curl -sA "Chrome" -L "${url}" | pup ".SetPageTerm-content json{}"`,
             (error, stdout) => {
                 if (error) {
                     reject({ error: "Quizlet CURL error: " + error });
                 } else {
-                    console.log(stdout);
+                    console.log("Stdout: ", stdout);
                     const data = JSON.parse(stdout);
                     if (data.length == 0)
                         reject("(Quizlet Query) No results found");
