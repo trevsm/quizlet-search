@@ -38,7 +38,7 @@ function searchQuery(body) {
             `curl -sA "Chrome" -L "http://www.google.com/search?q=\"${body}\"+site+quizlet.com" | pup "${pupFilter}"`,
             (error, stdout) => {
                 if (error) {
-                    reject(error);
+                    reject({ error: "Google CURL error: " + error });
                 } else {
                     const data = JSON.parse(stdout).filter(
                         (x) =>
@@ -76,7 +76,7 @@ function quizletQuery(url, question) {
             `curl -sA "Chrome" -L "${url}" | pup "${pupFilter}"`,
             (error, stdout) => {
                 if (error) {
-                    reject(error);
+                    reject({ error: "Quizlet CURL error: " + error });
                 } else {
                     const data = JSON.parse(stdout);
                     if (data.length == 0)
@@ -120,11 +120,11 @@ function quizletQuery(url, question) {
 app.post("/", async (req, res) => {
     try {
         const data = await searchQuery(req.body);
-        data.splice(5);
 
         let final = [];
         await Promise.all(
             data.map(async (item) => {
+                console.log(item.href);
                 const nextData = await quizletQuery(item.href, req.body).catch(
                     console.log
                 );
