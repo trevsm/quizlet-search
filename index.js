@@ -80,7 +80,7 @@ function searchQuery(body) {
 
 function quizletQuery(url, question) {
     return new Promise((resolve, reject) => {
-        exec(`curl -sA "Chrome" -L "${url}" `, (error, stdout) => {
+        exec(`curl -sA "Chrome" -L "${url}" | pup --color`, (error, stdout) => {
             resolve(stdout);
             // if (error) {
             //     reject({ error: "Quizlet CURL error: " + error });
