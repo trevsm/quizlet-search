@@ -80,52 +80,50 @@ function searchQuery(body) {
 
 function quizletQuery(url, question) {
     return new Promise((resolve, reject) => {
-        exec(
-            `curl -sA "Chrome" -L "${url}" | pup ".SetPageTerm-content json{}"`,
-            (error, stdout) => {
-                if (error) {
-                    reject({ error: "Quizlet CURL error: " + error });
-                } else {
-                    const data = JSON.parse(stdout);
-                    if (data.length == 0)
-                        reject("(Quizlet Query) No results found");
-                    let final = [];
-                    data.map((x) => {
-                        const values = getValues(x, "text");
+        exec(`curl -sA "Chrome" -L "${url}" `, (error, stdout) => {
+            resolve(stdout);
+            // if (error) {
+            //     reject({ error: "Quizlet CURL error: " + error });
+            // } else {
+            //     const data = JSON.parse(stdout);
+            //     if (data.length == 0)
+            //         reject("(Quizlet Query) No results found");
+            //     let final = [];
+            //     data.map((x) => {
+            //         const values = getValues(x, "text");
 
-                        try {
-                            if (!values[0] || !values[1]) throw "Invalid data";
+            //         try {
+            //             if (!values[0] || !values[1]) throw "Invalid data";
 
-                            const first = stringSimilarity
-                                .compareTwoStrings(question, values[0])
-                                .toFixed(2);
-                            const second = stringSimilarity
-                                .compareTwoStrings(question, values[1])
-                                .toFixed(2);
+            //             const first = stringSimilarity
+            //                 .compareTwoStrings(question, values[0])
+            //                 .toFixed(2);
+            //             const second = stringSimilarity
+            //                 .compareTwoStrings(question, values[1])
+            //                 .toFixed(2);
 
-                            if (first > 0.5 || second > 0.5) {
-                                if (first > second) {
-                                    final.push({
-                                        question: values[0],
-                                        answer: values[1],
-                                    });
-                                } else {
-                                    final.push({
-                                        question: values[1],
-                                        answer: values[0],
-                                    });
-                                }
-                            }
-                        } catch (e) {
-                            console.log(e);
-                        }
-                    });
-                    if (final.length == 0) reject("No results found");
+            //             if (first > 0.5 || second > 0.5) {
+            //                 if (first > second) {
+            //                     final.push({
+            //                         question: values[0],
+            //                         answer: values[1],
+            //                     });
+            //                 } else {
+            //                     final.push({
+            //                         question: values[1],
+            //                         answer: values[0],
+            //                     });
+            //                 }
+            //             }
+            //         } catch (e) {
+            //             console.log(e);
+            //         }
+            //     });
+            //     if (final.length == 0) reject("No results found");
 
-                    resolve(final);
-                }
-            }
-        );
+            //     resolve(final);
+            // }
+        });
     });
 }
 
