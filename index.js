@@ -71,46 +71,48 @@ function searchQuery(body) {
 
 function quizletQuery(url, question) {
     return new Promise((resolve, reject) => {
-        exec(`curl -sA "Chrome" -L "${url}" | pup "div"`, (error, stdout) => {
-            if (error) {
-                reject({ error: "Quizlet CURL error: " + error });
-            } else {
-                console.log("Stdout: ", stdout);
-                const data = JSON.parse(stdout);
-                if (data.length == 0)
-                    reject("(Quizlet Query) No results found");
-                let final = [];
-                data.map((x) => {
-                    const values = getValues(x, "text");
+        exec(
+            `curl -sA "Chrome" -L "${url}" | pup ".SetPageTerm-content json{}"`,
+            (error, stdout) => {
+                if (error) {
+                    reject({ error: "Quizlet CURL error: " + error });
+                } else {
+                    const data = JSON.parse(stdout);
+                    if (data.length == 0)
+                        reject("(Quizlet Query) No results found");
+                    let final = [];
+                    data.map((x) => {
+                        const values = getValues(x, "text");
 
-                    try {
-                        const first = stringSimilarity
-                            .compareTwoStrings(question, values[0])
-                            .toFixed(2);
-                        const second = stringSimilarity
-                            .compareTwoStrings(question, values[1])
-                            .toFixed(2);
+                        try {
+                            const first = stringSimilarity
+                                .compareTwoStrings(question, values[0])
+                                .toFixed(2);
+                            const second = stringSimilarity
+                                .compareTwoStrings(question, values[1])
+                                .toFixed(2);
 
-                        if (first > 0.5 || second > 0.5) {
-                            const elem = {};
-                            if (first >= second) {
-                                elem.text = values[1];
-                                elem.confidence = first;
-                            } else {
-                                elem.text = values[0];
-                                elem.confidence = second;
+                            if (first > 0.5 || second > 0.5) {
+                                const elem = {};
+                                if (first >= second) {
+                                    elem.text = values[1];
+                                    elem.confidence = first;
+                                } else {
+                                    elem.text = values[0];
+                                    elem.confidence = second;
+                                }
+                                final.push({ ...elem });
                             }
-                            final.push({ ...elem });
+                        } catch (e) {
+                            console.log(e);
                         }
-                    } catch (e) {
-                        console.log(e);
-                    }
-                });
-                if (final.length == 0) reject("No results found");
+                    });
+                    if (final.length == 0) reject("No results found");
 
-                resolve(final);
+                    resolve(final);
+                }
             }
-        });
+        );
     });
 }
 
@@ -122,7 +124,7 @@ app.post("/", async (req, res) => {
         await Promise.all(
             data.map(async (item) => {
                 const nextData = await quizletQuery(item.href, req.body).catch(
-                    console.log
+                    () => {}
                 );
                 if (nextData) final = final.concat(nextData);
             })
