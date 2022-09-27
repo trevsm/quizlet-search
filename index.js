@@ -30,6 +30,15 @@ function getValues(obj, key) {
     return objects;
 }
 
+function formatString(str) {
+    return str
+        .replace(/[^a-zA-Z0-9 ]/g, "")
+        .replace(/\s\s+/g, " ")
+        .replaceAll(" ", "+")
+        .trim()
+        .toLowerCase();
+}
+
 function searchQuery(body) {
     const pupFilter = `:parent-of(:parent-of(a[href*="http"])) json{}`;
 
@@ -85,6 +94,8 @@ function quizletQuery(url, question) {
                         const values = getValues(x, "text");
 
                         try {
+                            if (!values[0] || !values[1]) throw "Invalid data";
+
                             const first = stringSimilarity
                                 .compareTwoStrings(question, values[0])
                                 .toFixed(2);
@@ -93,15 +104,17 @@ function quizletQuery(url, question) {
                                 .toFixed(2);
 
                             if (first > 0.5 || second > 0.5) {
-                                const elem = {};
-                                if (first >= second) {
-                                    elem.text = values[1];
-                                    elem.confidence = first;
+                                if (first > second) {
+                                    final.push({
+                                        question: values[0],
+                                        answer: values[1],
+                                    });
                                 } else {
-                                    elem.text = values[0];
-                                    elem.confidence = second;
+                                    final.push({
+                                        question: values[1],
+                                        answer: values[0],
+                                    });
                                 }
-                                final.push({ ...elem });
                             }
                         } catch (e) {
                             console.log(e);
@@ -117,20 +130,28 @@ function quizletQuery(url, question) {
 }
 
 app.post("/", async (req, res) => {
+    const body = formatString(req.body);
     try {
-        const data = await searchQuery(req.body);
+        // const data = await searchQuery(body);
 
-        let final = [];
-        await Promise.all(
-            data.map(async (item) => {
-                const nextData = await quizletQuery(item.href, req.body).catch(
-                    () => {}
-                );
-                if (nextData) final = final.concat(nextData);
-            })
-        );
+        const data = await quizletQuery(
+            "https://quizlet.com/35958825/marketing-quiz-4-flash-cards/",
+            body
+        ).catch(console.log);
+        res.json(data);
 
-        res.json(final);
+        //     let final = [];
+        //     await Promise.all(
+        //         data.map(async (item) => {
+        //             const nextData = await quizletQuery(item.href, body).catch(
+        //                 (e) => {}
+        //             );
+        //             if (nextData) final = final.concat(nextData);
+        //         })
+        //     );
+        //     if (final.length == 0) throw "No results found";
+
+        //     res.json(final);
     } catch (error) {
         res.send({ error });
     }
