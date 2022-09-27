@@ -78,6 +78,7 @@ function quizletQuery(url, question) {
                 if (error) {
                     reject({ error: "Quizlet CURL error: " + error });
                 } else {
+                    console.log(stdout);
                     const data = JSON.parse(stdout);
                     if (data.length == 0)
                         reject("(Quizlet Query) No results found");
@@ -124,7 +125,6 @@ app.post("/", async (req, res) => {
         let final = [];
         await Promise.all(
             data.map(async (item) => {
-                console.log(item.href);
                 const nextData = await quizletQuery(item.href, req.body).catch(
                     console.log
                 );
