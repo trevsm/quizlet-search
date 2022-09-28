@@ -1,20 +1,20 @@
 const stringSimilarity = require("string-similarity");
-const cloudscraper = require("cloudscraper").defaults({
-    agentOptions: {
-        ciphers: "ALL",
-        secureProtocol: "TLSv1_method",
-    },
+const cloudscraper = require("cloudscraper");
+const { parse } = require("node-html-parser");
+
+const options = {
     headers: {
         "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36",
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
     },
-});
-const { parse } = require("node-html-parser");
+    followAllRedirects: true,
+    challengesToSolve: 3,
+};
 
 function quizletQuery(url, question) {
     return new Promise((resolve, _reject) => {
-        cloudscraper.get(url).then((response) => {
+        cloudscraper.get({ ...options, url }).then((response) => {
             const root = parse(response);
             const cardList = root.querySelectorAll(".SetPageTerm-content");
 
