@@ -30,6 +30,15 @@ function getValues(obj, key) {
     return objects;
 }
 
+function formatString(str) {
+    return str
+        .replace(/[^a-zA-Z0-9 ]/g, "")
+        .replace(/\s\s+/g, " ")
+        .replaceAll(" ", "+")
+        .trim()
+        .toLowerCase();
+}
+
 function searchQuery(body) {
     const pupFilter = `:parent-of(:parent-of(a[href*="http"])) json{}`;
 
@@ -118,8 +127,9 @@ function quizletQuery(url, question) {
 }
 
 app.post("/", async (req, res) => {
+    const body = formatString(req.body);
     try {
-        const data = await searchQuery(req.body);
+        const data = await searchQuery(body);
         data.splice(5);
 
         let final = [];
