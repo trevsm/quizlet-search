@@ -73,7 +73,7 @@ function quizletQuery(url, question) {
     return new Promise((resolve, reject) => {
         const pupFilter = `.SetPageTerm-content json{}`;
         exec(
-            `curl -sA "Chrome" -L "${url}" | pup "${pupFilter}"`,
+            `curl -sA "Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/81.0" -L "${url}" | pup "${pupFilter}"`,
             (error, stdout) => {
                 if (error) {
                     reject(error);
