@@ -130,7 +130,7 @@ app.post("/", async (req, res) => {
     const body = formatString(req.body);
     try {
         const data = await searchQuery(body);
-        data.splice(5);
+        data.splice(2);
 
         let final = [];
         await Promise.all(
