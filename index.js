@@ -30,7 +30,7 @@ app.post("/", async (req, res) => {
         await Promise.all(
             links.map(async (link) => {
                 const nextData = await quizletQuery(link, req.body).catch(
-                    () => {}
+                    console.log
                 );
                 if (nextData) final = final.concat(nextData);
             })
