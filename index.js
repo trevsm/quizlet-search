@@ -30,15 +30,6 @@ function getValues(obj, key) {
     return objects;
 }
 
-function formatString(str) {
-    return str
-        .replace(/[^a-zA-Z0-9 ]/g, "")
-        .replace(/\s\s+/g, " ")
-        .replaceAll(" ", "+")
-        .trim()
-        .toLowerCase();
-}
-
 function searchQuery(body) {
     const pupFilter = `:parent-of(:parent-of(a[href*="http"])) json{}`;
 
@@ -47,7 +38,7 @@ function searchQuery(body) {
             `curl -sA "Chrome" -L "http://www.google.com/search?q=\"${body}\"+site+quizlet.com" | pup "${pupFilter}"`,
             (error, stdout) => {
                 if (error) {
-                    reject({ error: "Google CURL error: " + error });
+                    reject(error);
                 } else {
                     const data = JSON.parse(stdout).filter(
                         (x) =>
@@ -80,76 +71,68 @@ function searchQuery(body) {
 
 function quizletQuery(url, question) {
     return new Promise((resolve, reject) => {
-        exec(`curl -sA "Chrome" -L "${url}" | pup --color`, (error, stdout) => {
-            resolve(stdout);
-            // if (error) {
-            //     reject({ error: "Quizlet CURL error: " + error });
-            // } else {
-            //     const data = JSON.parse(stdout);
-            //     if (data.length == 0)
-            //         reject("(Quizlet Query) No results found");
-            //     let final = [];
-            //     data.map((x) => {
-            //         const values = getValues(x, "text");
+        const pupFilter = `.SetPageTerm-content json{}`;
+        exec(
+            `curl -sA "Chrome" -L "${url}" | pup "${pupFilter}"`,
+            (error, stdout) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    const data = JSON.parse(stdout);
+                    if (data.length == 0)
+                        reject("(Quizlet Query) No results found");
+                    let final = [];
+                    data.map((x) => {
+                        const values = getValues(x, "text");
 
-            //         try {
-            //             if (!values[0] || !values[1]) throw "Invalid data";
+                        try {
+                            const first = stringSimilarity
+                                .compareTwoStrings(question, values[0])
+                                .toFixed(2);
+                            const second = stringSimilarity
+                                .compareTwoStrings(question, values[1])
+                                .toFixed(2);
 
-            //             const first = stringSimilarity
-            //                 .compareTwoStrings(question, values[0])
-            //                 .toFixed(2);
-            //             const second = stringSimilarity
-            //                 .compareTwoStrings(question, values[1])
-            //                 .toFixed(2);
+                            if (first > 0.5 || second > 0.5) {
+                                const elem = {};
+                                if (first >= second) {
+                                    elem.text = values[1];
+                                    elem.confidence = first;
+                                } else {
+                                    elem.text = values[0];
+                                    elem.confidence = second;
+                                }
+                                final.push({ ...elem });
+                            }
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    });
+                    if (final.length == 0) reject("No results found");
 
-            //             if (first > 0.5 || second > 0.5) {
-            //                 if (first > second) {
-            //                     final.push({
-            //                         question: values[0],
-            //                         answer: values[1],
-            //                     });
-            //                 } else {
-            //                     final.push({
-            //                         question: values[1],
-            //                         answer: values[0],
-            //                     });
-            //                 }
-            //             }
-            //         } catch (e) {
-            //             console.log(e);
-            //         }
-            //     });
-            //     if (final.length == 0) reject("No results found");
-
-            //     resolve(final);
-            // }
-        });
+                    resolve(final);
+                }
+            }
+        );
     });
 }
 
 app.post("/", async (req, res) => {
-    const body = formatString(req.body);
     try {
-        // const data = await searchQuery(body);
+        const data = await searchQuery(req.body);
+        data.splice(5);
 
-        const data = await quizletQuery(
-            "https://quizlet.com/35958825/marketing-quiz-4-flash-cards/",
-            body
-        ).catch(console.log);
-        res.json(data);
+        let final = [];
+        await Promise.all(
+            data.map(async (item) => {
+                const nextData = await quizletQuery(item.href, req.body).catch(
+                    console.log
+                );
+                if (nextData) final = final.concat(nextData);
+            })
+        );
 
-        //     let final = [];
-        //     await Promise.all(
-        //         data.map(async (item) => {
-        //             const nextData = await quizletQuery(item.href, body).catch(
-        //                 (e) => {}
-        //             );
-        //             if (nextData) final = final.concat(nextData);
-        //         })
-        //     );
-        //     if (final.length == 0) throw "No results found";
-
-        //     res.json(final);
+        res.json(final);
     } catch (error) {
         res.send({ error });
     }

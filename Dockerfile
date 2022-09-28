@@ -1,9 +1,6 @@
 FROM node:16
 RUN apt-get update
 
-# install bash
-RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-
 # install golang
 RUN curl -OL https://golang.org/dl/go1.16.7.linux-amd64.tar.gz
 RUN tar -C /usr/local -xzf go1.16.7.linux-amd64.tar.gz
