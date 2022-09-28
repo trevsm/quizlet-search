@@ -3,6 +3,8 @@ const bodyParser = require("body-parser");
 const express = require("express");
 const cors = require("cors");
 const stringSimilarity = require("string-similarity");
+const cloudscraper = require("cloudscraper");
+const { parse } = require("node-html-parser");
 
 const app = express();
 
@@ -80,49 +82,61 @@ function searchQuery(body) {
 
 function quizletQuery(url, question) {
     return new Promise((resolve, reject) => {
-        const pupFilter = `.SetPageTerm-content json{}`;
-        exec(
-            `curl -sA "Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/81.0" -L "${url}" | pup "${pupFilter}"`,
-            (error, stdout) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    const data = JSON.parse(stdout);
-                    if (data.length == 0)
-                        reject("(Quizlet Query) No results found");
-                    let final = [];
-                    data.map((x) => {
-                        const values = getValues(x, "text");
+        cloudscraper.get(url).then((response) => {
+            const root = parse(response);
+            const cardList = root.querySelectorAll(".SetPageTerm-content");
 
-                        try {
-                            const first = stringSimilarity
-                                .compareTwoStrings(question, values[0])
-                                .toFixed(2);
-                            const second = stringSimilarity
-                                .compareTwoStrings(question, values[1])
-                                .toFixed(2);
+            let final = [];
 
-                            if (first > 0.5 || second > 0.5) {
-                                const elem = {};
-                                if (first >= second) {
-                                    elem.text = values[1];
-                                    elem.confidence = first;
-                                } else {
-                                    elem.text = values[0];
-                                    elem.confidence = second;
-                                }
-                                final.push({ ...elem });
-                            }
-                        } catch (e) {
-                            console.log(e);
+            cardList.forEach((card) => {
+                const wordText = card.querySelector(
+                    ".SetPageTerm-wordText"
+                ).text;
+
+                const definitionText = card.querySelector(
+                    ".SetPageTerm-definitionText"
+                ).text;
+
+                try {
+                    const wordSimilarity = stringSimilarity.compareTwoStrings(
+                        wordText,
+                        question
+                    );
+
+                    const defSimilarity = stringSimilarity.compareTwoStrings(
+                        wordText,
+                        question
+                    );
+
+                    const bestSimilarity = (
+                        wordSimilarity > defSimilarity
+                            ? wordSimilarity
+                            : defSimilarity
+                    ).toFixed(2);
+
+                    if (bestSimilarity > 0.5) {
+                        if (wordText.length > definitionText.length) {
+                            final.push({
+                                answer: definitionText,
+                                question: wordText,
+                                confidence: bestSimilarity,
+                            });
+                        } else {
+                            final.push({
+                                answer: wordText,
+                                question: definitionText,
+                                confidence: bestSimilarity,
+                            });
                         }
-                    });
-                    if (final.length == 0) reject("No results found");
-
-                    resolve(final);
+                    }
+                } catch (e) {
+                    console.log(e);
+                    return;
                 }
-            }
-        );
+            });
+
+            resolve(final);
+        });
     });
 }
 
@@ -130,9 +144,10 @@ app.post("/", async (req, res) => {
     const body = formatString(req.body);
     try {
         const data = await searchQuery(body);
-        data.splice(2);
+        data.splice(4);
 
         let final = [];
+
         await Promise.all(
             data.map(async (item) => {
                 const nextData = await quizletQuery(item.href, req.body).catch(
@@ -141,6 +156,8 @@ app.post("/", async (req, res) => {
                 if (nextData) final = final.concat(nextData);
             })
         );
+
+        final.sort((a, b) => a.confidence < b.confidence);
 
         res.json(final);
     } catch (error) {
