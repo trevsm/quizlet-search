@@ -14,7 +14,7 @@ const options = {
 
 function quizletQuery(url, question) {
     return new Promise((resolve, _reject) => {
-        cloudscraper.get({ ...options, url }).then((response) => {
+        cloudscraper.get({ ...options, uri: url }).then((response) => {
             const root = parse(response);
             const cardList = root.querySelectorAll(".SetPageTerm-content");
 
